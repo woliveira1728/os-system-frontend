@@ -8,11 +8,13 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
+import EditIcon from '@mui/icons-material/Edit';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders } from '@/contexts/OrdersContext';
 import { Order, ChecklistItem, Photo } from '@/types/interfaces';
 import { checklistCreateSchema, type ChecklistCreateForm } from '@/schemas/checklist.schema';
+import { orderCreateSchema, type OrderCreateForm } from '@/schemas/order.schema';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Navbar from '@/components/Navbar';
@@ -33,11 +35,17 @@ export default function OrderDetailPage() {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraLoading, setCameraLoading] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const { handleSubmit, register, formState: { errors }, reset } = useForm<ChecklistCreateForm>({
     resolver: zodResolver(checklistCreateSchema),
+  });
+
+  const { handleSubmit: handleEditSubmit, register: registerEdit, formState: { errors: editErrors, isSubmitting }, reset: resetEdit, setValue } = useForm<OrderCreateForm>({
+    resolver: zodResolver(orderCreateSchema),
   });
 
   const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL as string).replace('/api', '');
@@ -247,6 +255,54 @@ export default function OrderDetailPage() {
     }
   };
 
+  const openEditDialog = () => {
+    if (order) {
+      setValue('title', order.title);
+      setValue('description', order.description);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const closeEditDialog = () => {
+    setEditDialogOpen(false);
+    resetEdit();
+  };
+
+  const onEditOrder = async (data: OrderCreateForm) => {
+    if (!id) return;
+    try {
+      await api.put(`/orders/${id}`, data);
+      toast.success('Ordem atualizada com sucesso!');
+      const updated = await getOrder(id);
+      setOrder(updated);
+      closeEditDialog();
+    } catch (error) {
+      console.error('Erro ao atualizar ordem:', error);
+      toast.error('Erro ao atualizar ordem');
+    }
+  };
+
+  const openDeleteDialog = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const onDeleteOrder = async () => {
+    if (!id) return;
+    try {
+      await api.delete(`/orders/${id}`);
+      toast.success('Ordem excluída com sucesso!');
+      router.push('/orders');
+    } catch (error) {
+      console.error('Erro ao deletar ordem:', error);
+      toast.error('Erro ao deletar ordem');
+      closeDeleteDialog();
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -275,10 +331,22 @@ export default function OrderDetailPage() {
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Button onClick={() => router.push('/orders')} sx={{ mb: 2 }}>← Voltar</Button>
         
-        <Typography variant="h5" gutterBottom>{order.title}</Typography>
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          OS #{order.id} - Status: {order.status}
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+          <Box>
+            <Typography variant="h5" gutterBottom>{order.title}</Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              OS #{order.id} - Status: {order.status}
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1}>
+            <IconButton color="primary" onClick={openEditDialog} aria-label="Editar ordem">
+              <EditIcon />
+            </IconButton>
+            <IconButton color="error" onClick={openDeleteDialog} aria-label="Deletar ordem">
+              <DeleteIcon />
+            </IconButton>
+          </Stack>
+        </Stack>
 
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -428,6 +496,55 @@ export default function OrderDetailPage() {
         <DialogActions>
           <Button onClick={closeCamera}>Cancelar</Button>
           <Button variant="contained" onClick={capturePhoto}>Capturar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de edição de ordem */}
+      <Dialog open={editDialogOpen} onClose={closeEditDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>Editar Ordem de Serviço</DialogTitle>
+        <form onSubmit={handleEditSubmit(onEditOrder)}>
+          <DialogContent dividers>
+            <Stack spacing={2}>
+              <TextField
+                label="Título"
+                fullWidth
+                {...registerEdit('title')}
+                error={!!editErrors.title}
+                helperText={editErrors.title?.message}
+              />
+              <TextField
+                label="Descrição"
+                fullWidth
+                multiline
+                rows={4}
+                {...registerEdit('description')}
+                error={!!editErrors.description}
+                helperText={editErrors.description?.message}
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeEditDialog}>Cancelar</Button>
+            <Button type="submit" variant="contained" disabled={isSubmitting}>
+              {isSubmitting ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+
+      {/* Dialog de confirmação de exclusão */}
+      <Dialog open={deleteDialogOpen} onClose={closeDeleteDialog} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirmar Exclusão</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Tem certeza que deseja excluir esta ordem de serviço? Esta ação não pode ser desfeita.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog}>Cancelar</Button>
+          <Button onClick={onDeleteOrder} variant="contained" color="error">
+            Excluir
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -68,11 +68,7 @@ export interface Order {
 export interface CreateOrderData {
   title: string;
   description: string;
-  location?: string;
   priority?: PriorityLevel;
-  clientName?: string;
-  clientPhone?: string;
-  clientEmail?: string;
   scheduledAt?: string;
 }
 
