@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Box, Container, Typography, Card, CardContent, Stack, TextField, Button, CircularProgress, Checkbox, IconButton,
-  Dialog, DialogContent, DialogTitle, DialogActions, ButtonBase,
+  Dialog, DialogContent, DialogTitle, DialogActions, ButtonBase, FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
@@ -12,7 +12,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrders } from '@/contexts/OrdersContext';
-import { Order, ChecklistItem, Photo } from '@/types/interfaces';
+import { Order, ChecklistItem, Photo, OrderStatus } from '@/types/interfaces';
 import { checklistCreateSchema, type ChecklistCreateForm } from '@/schemas/checklist.schema';
 import { orderCreateSchema, type OrderCreateForm } from '@/schemas/order.schema';
 import { useForm } from 'react-hook-form';
@@ -26,7 +26,7 @@ export default function OrderDetailPage() {
   const id = params?.id as string;
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { getOrder, fetchChecklist, addChecklistItem, toggleChecklistItem, deleteChecklistItem } = useOrders();
+  const { getOrder, fetchChecklist, addChecklistItem, toggleChecklistItem, deleteChecklistItem, updateOrderStatus } = useOrders();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -37,6 +37,7 @@ export default function OrderDetailPage() {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -242,6 +243,35 @@ export default function OrderDetailPage() {
 
   const closePhoto = () => setPhotoPreview(null);
 
+  const statusOptions: { value: OrderStatus; label: string }[] = [
+    { value: 'PENDING', label: 'Pendente' },
+    { value: 'IN_PROGRESS', label: 'Em andamento' },
+    { value: 'COMPLETED', label: 'Concluída' },
+    { value: 'CANCELLED', label: 'Cancelada' },
+  ];
+
+  const statusLabels: Record<OrderStatus, string> = {
+    PENDING: 'Pendente',
+    IN_PROGRESS: 'Em andamento',
+    COMPLETED: 'Concluída',
+    CANCELLED: 'Cancelada',
+  };
+
+  const onChangeStatus = async (value: OrderStatus) => {
+    if (!id) return;
+    try {
+      setStatusSaving(true);
+      await updateOrderStatus(id, value);
+      const updated = await getOrder(id);
+      setOrder(updated);
+    } catch (error) {
+      console.error('Erro ao atualizar status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
   const onDeletePhoto = async (photoId: string) => {
     if (!photoId || !id) return;
     try {
@@ -335,7 +365,7 @@ export default function OrderDetailPage() {
           <Box>
             <Typography variant="h5" gutterBottom>{order.title}</Typography>
             <Typography variant="body2" color="text.secondary" gutterBottom>
-              OS #{order.id} - Status: {order.status}
+              OS #{order.id} - Status: {statusLabels[order.status] || order.status}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1}>
@@ -347,6 +377,31 @@ export default function OrderDetailPage() {
             </IconButton>
           </Stack>
         </Stack>
+
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between">
+              <Box>
+                <Typography variant="subtitle1" gutterBottom>Status da ordem</Typography>
+                <Typography variant="body2" color="text.secondary">Altere o status para refletir o andamento.</Typography>
+              </Box>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel id="order-status-label">Status</InputLabel>
+                <Select
+                  labelId="order-status-label"
+                  label="Status"
+                  value={order.status}
+                  onChange={(e) => onChangeStatus(e.target.value as OrderStatus)}
+                  disabled={statusSaving}
+                >
+                  {statusOptions.map((opt) => (
+                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+          </CardContent>
+        </Card>
 
         <Card sx={{ mb: 3 }}>
           <CardContent>
