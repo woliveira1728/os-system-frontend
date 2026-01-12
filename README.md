@@ -49,35 +49,35 @@ A aplicação estará disponível em `http://localhost:3000`
 ```
 src/
 ├── app/                   # App Router (Next.js 14)
-│   ├── layout.tsx         # Layout raiz
-│   ├── page.tsx           # Página inicial (login)
-│   ├── globals.css        # Estilos globais
-│   ├── register/          # Página de registro
-│   │   └── page.tsx
-│   ├── dashboard/         # Dashboard principal
-│   │   └── page.tsx
-│   └── orders/            # Gerenciamento de ordens
-│       ├── page.tsx       # Lista de ordens
-│       └── [id]/
-│           └── page.tsx   # Detalhes da ordem
+│       ├── layout.tsx         # Layout raiz
+│       ├── page.tsx           # Página inicial (login)
+│       ├── globals.css        # Estilos globais
+│       ├── register/          # Página de registro
+│       │       └── page.tsx
+│       ├── dashboard/         # Dashboard principal
+│       │       └── page.tsx
+│       └── orders/            # Gerenciamento de ordens
+│                 ├── page.tsx       # Lista de ordens
+│                 └── [id]/
+│                           └── page.tsx   # Detalhes da ordem
 │
 ├── components/            # Componentes React reutilizáveis
-│   └── Navbar.tsx
+│        └── Navbar.tsx
 ├── contexts/              # Context API
-│   ├── AuthContext.tsx    # Autenticação e usuário
-│   └── OrdersContext.tsx  # Estado global de ordens
+│        ├── AuthContext.tsx    # Autenticação e usuário
+│        └── OrdersContext.tsx  # Estado global de ordens
 ├── providers/             # Providers globais
-│   ├── AppProvider.tsx
-│   ├── QueryProvider.tsx
-│   └── ThemeProvider.tsx
+│        ├── AppProvider.tsx
+│        ├── QueryProvider.tsx
+│        └── ThemeProvider.tsx
 ├── schemas/               # Schemas Zod para validação
-│   ├── auth.schema.ts
-│   ├── order.schema.ts
-│   └── checklist.schema.ts
+│        ├── auth.schema.ts
+│        ├── order.schema.ts
+│        └── checklist.schema.ts
 ├── services/              # Configuração de API
-│   └── api.ts
+│        └── api.ts
 ├── types/                 # TypeScript types
-│   └── interfaces.ts
+│        └── interfaces.ts
 └── utils/                 # Funções auxiliares
 ```
 
@@ -92,7 +92,7 @@ src/
 
 ### Ordens de Serviço
 - ✅ Listar todas as ordens
-- ✅ Criar nova ordem com título, descrição e prioridade
+- ✅ Criar nova ordem com título e descrição
 - ✅ Visualizar detalhes da ordem
 - ✅ Editar título e descrição
 - ✅ Deletar ordem com confirmação
@@ -167,7 +167,6 @@ interface OrdersContextData {
 | `/dashboard` | Dashboard principal | Sim |
 | `/orders` | Lista de ordens | Sim |
 | `/orders/[id]` | Detalhes da ordem | Sim |
-| `/checklist` | Templates de checklist | Sim |
 
 ## Desenvolvimento
 
